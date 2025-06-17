@@ -49,14 +49,14 @@ class GTDApp():
             
         except json.JSONDecodeError:
             print("ERROR: Corrupted JSON file. Initialize new inbox")
-            data = {"inbox" : [],
+            data = {"Inbox" : [],
                     "Next Actions": [],
                     "Waiting": [],
                     "Projects": [],
                     "Someday/Maybe": []}
         except IOError:
             print("ERROR: Unable to read file. Check permissions")
-            data = {"inbox" : [],
+            data = {"Inbox" : [],
                     "Next Actions": [],
                     "Waiting": [],
                     "Projects": [],
@@ -95,7 +95,7 @@ class GTDApp():
         title = input("Enter task: ").strip()
         if title:
             task = {"title": title, "created at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "status": "open"}
-            self.data["inbox"].append(task)
+            self.data["Inbox"].append(task)
             self.save_file() # Save after adding
             print("Added task")
         else:
@@ -125,8 +125,8 @@ class GTDApp():
         """Delete a task from the inbox"""
         try:
             index = int(input("Task number to delete: "))
-            if (0 <= index < len(self.data["inbox"])):
-                self.data["inbox"].pop(index)
+            if (0 <= index < len(self.data["Inbox"])):
+                self.data["Inbox"].pop(index)
                 self.save_file() # Save after deleting
                 print("Done")
             else:
@@ -140,9 +140,9 @@ class GTDApp():
         """Mark a task as complete."""
         try:
             index = int(input("Task number to complete: "))
-            if (0 <= index < len(self.data["inbox"])):
-                if self.data["inbox"][index]["status"] == "open":
-                    self.data["inbox"][index]["status"] = "closed"
+            if (0 <= index < len(self.data["Inbox"])):
+                if self.data["Inbox"][index]["status"] == "open":
+                    self.data["Inbox"][index]["status"] = "closed"
                 else:
                     asking = True
                     while asking:
@@ -152,7 +152,7 @@ class GTDApp():
 
                         if answer == "Y":
                             print(answer)
-                            self.data["inbox"][index]["status"] = "open"
+                            self.data["Inbox"][index]["status"] = "open"
                         elif answer == "N":
                             continue
                         else:
@@ -165,6 +165,48 @@ class GTDApp():
             print("ERROR: Enter a valid number")
 
 
+    def move_item(self, current_cat):
+        """Move item from inbox to somewhere else"""
+        running_move_menu = True
+        categories = {"I" : "Inbox",
+                      "N" : "Next Actions",
+                      "W" : "Waiting",
+                      "P" : "Projects",
+                      "S" : "Someday/Maybe"}
+        clear_screen()
+        
+        while running_move_menu:
+
+            print("Tasks:\n")
+            for (i, task) in enumerate(self.data[current_cat]):
+                status = "[ ]" if task["status"] == "open" else "[X]"
+                print(f"{i}. {status} {task['title']} (created: {task['created at']})")
+            asking_for_targets = True
+            try:
+                while asking_for_targets:
+                    index = int(input("Which task would you like to move? "))
+                    if 0 <= index < len(self.data[current_cat]):
+                        task = self.data[current_cat].pop(index)
+                        print("Where would you like to move this to?")
+                        for cat in self.categories:
+                            if not cat == current_cat:
+                                print(f"[{cat[0]}]{cat[1:]}")
+
+                        answer = input().strip().upper()
+                        if answer in list(categories.keys()):
+                            self.data[categories[answer]].append(task)
+                            asking_for_targets = False
+                            running_move_menu = False
+                        else:
+                            print("Not a valid category")
+                    else:
+                        print("Not a valid index")
+            except ValueError:
+                print("ERROR: Enter a valid number")
+        self.save_file()
+
+
+
 
     def inbox_menu(self):
         running_inbox_menu = True
@@ -172,7 +214,7 @@ class GTDApp():
         while running_inbox_menu:
             clear_screen()
             print("~~~~INBOX~~~~\n")
-            for i, task in enumerate(self.data["inbox"]):
+            for i, task in enumerate(self.data["Inbox"]):
                 status = "[X]" if task["status"] == "closed" else "[ ]"
                 print(f"{i}. {status} {task['title']} (\"created: {task['created at']})")
             print("~~~~~~~~~~~~~~")
@@ -186,23 +228,52 @@ class GTDApp():
             elif answer == "C":
                 self.mark_complete()
             elif answer == "M":
-                print("TODO: We still need to do this!!!")
-                input("Let's continue by typing a character: ")
+                self.move_item("Inbox")
             elif answer == "B":
                 running_inbox_menu = False
                 
 
     def next_menu(self):
+        """
+        TODO We should move files after we mark them as completed
+        """
         running_next_menu = True
 
         while running_next_menu:
             clear_screen()
             print("~~~~~NEXT ACTIONS~~~~~~")
+            for (i, task) in enumerate(self.data["Next Actions"]):
+                status = "[X]" if task['status'] == "closed" else "[ ]"
+                print(f"{i}. {status} {task['title']} (created: {task['created at']})")
+            
             # Like to inspect project, change status
             print("~~~~~~~~~~~~~~~~~~~~~~~")
-            print("\nWould you like to go [B]ack?")
+            print("\nWould you like to [C]omplete or go [B]ack?")
             answer = input().strip().upper()
-            if answer == "B":
+            if answer == "C":
+                try:
+                    index = int(input("Task to complete: "))
+                    if (0 <= index < len(self.data["inbox"])):
+                        if self.data["Next Actions"][index]["status"] == "open":
+                            self.data["Next Actions"][index]["status"] = "closed"
+                            self.save_file()
+                        else:
+                            ask_for_change = True
+                            while ask_for_change:
+                                ask_for_change = False
+                                answer = input("WARNING: You are about to open a previously closed issue, are you sure? [Y]es/[N]o")
+                                if answer == "Y":
+                                    self.data["Next Actions"][index]["status"] = "open"
+                                elif answer == "N":
+                                    continue
+                                else:
+                                    ask_for_change = True
+                                    print("Error, respond with Y/N")
+                                    
+                except ValueError:
+                    print("ERROR: Incorrect Value")
+
+            elif answer == "B":
                 running_next_menu = False
 
 
