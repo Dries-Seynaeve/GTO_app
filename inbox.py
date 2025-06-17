@@ -114,8 +114,56 @@ class GTDApp():
 
             if answer == "I":
                 self.inbox_menu()
+            elif answer == "N":
+                self.next_menu()
             elif answer == "Q":
                 running_inspect_menu = False
+
+
+
+    def delete_task(self):
+        """Delete a task from the inbox"""
+        try:
+            index = int(input("Task number to delete: "))
+            if (0 <= index < len(self.data["inbox"])):
+                self.data["inbox"].pop(index)
+                self.save_file() # Save after deleting
+                print("Done")
+            else:
+                print("Not a valid index")
+        except ValueError:
+            print("ERROR: Enter a valid number.")
+
+
+
+    def mark_complete(self):
+        """Mark a task as complete."""
+        try:
+            index = int(input("Task number to complete: "))
+            if (0 <= index < len(self.data["inbox"])):
+                if self.data["inbox"][index]["status"] == "open":
+                    self.data["inbox"][index]["status"] = "closed"
+                else:
+                    asking = True
+                    while asking:
+                        print("You are about to reopen a closed task. Are you sure? [Y]es/[N]o")
+                        asking = False
+                        answer = input().strip().upper()
+
+                        if answer == "Y":
+                            print(answer)
+                            self.data["inbox"][index]["status"] = "open"
+                        elif answer == "N":
+                            continue
+                        else:
+                            print("ERROR: Option not recognized! Answer with Y or N")
+                            asking = True    # Ask again
+                self.save_file() # Save after marking as complete
+            else:
+                print("Not a valid index")
+        except ValueError:
+            print("ERROR: Enter a valid number")
+
 
 
     def inbox_menu(self):
@@ -129,15 +177,33 @@ class GTDApp():
                 print(f"{i}. {status} {task['title']} (\"created: {task['created at']})")
             print("~~~~~~~~~~~~~~")
             print(" ")
-            print("Would you like to [A]dd, [D]elete, [C]omplete, [M]over or [Q]uit?")            
+            print("Would you like to [A]dd, [D]elete, [C]omplete, [M]over or go [B]ack?")            
             answer = input().strip().upper()
             if answer == "A":
                 self.capture_task()
-            elif answer == "Q":
+            elif answer == "D":
+                self.delete_task()
+            elif answer == "C":
+                self.mark_complete()
+            elif answer == "M":
+                print("TODO: We still need to do this!!!")
+                input("Let's continue by typing a character: ")
+            elif answer == "B":
                 running_inbox_menu = False
                 
 
+    def next_menu(self):
+        running_next_menu = True
 
+        while running_next_menu:
+            clear_screen()
+            print("~~~~~NEXT ACTIONS~~~~~~")
+            # Like to inspect project, change status
+            print("~~~~~~~~~~~~~~~~~~~~~~~")
+            print("\nWould you like to go [B]ack?")
+            answer = input().strip().upper()
+            if answer == "B":
+                running_next_menu = False
 
 
 
